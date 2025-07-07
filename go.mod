@@ -1,4 +1,4 @@
-module study-go/auth
+module ati-study-jwt
 
 go 1.24.4
 

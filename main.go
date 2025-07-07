@@ -13,43 +13,8 @@ import (
 )
 
 // 定义一个自定义的声明结构体
-type User struct {
-	Userid   int       `gorm:"primaryKey;not null"`
-	Username string    `gorm:"unique;not null" json:"username" form:"username"`
-	Password string    `gorm:"not null" json:"password" form:"password"`
-	BirthDay time.Time `gorm:"column:birthday;type:date;not null" json:"birthday" form:"birthday"`
-}
 
 // JWT声明结构体
-type Claims struct {
-	Username string `json:"username"`
-	jwt.StandardClaims
-}
-
-// 生成JWT Token
-func generateToken(username string) (string, error) {
-	// 定义签名密钥
-	var mySigningKey = []byte(os.Getenv("JWT_SECRET"))
-
-	// 创建一个新的声明，设置一些自定义字段
-	claims := Claims{
-		Username: username,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 1).Unix(), // 设置过期时间为1小时
-			Issuer:    "GoJWT",
-		},
-	}
-
-	// 创建一个新的token对象，指定签名算法和声明
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	// 用签名密钥签名生成token字符串
-	tokenString, err := token.SignedString(mySigningKey)
-	if err != nil {
-		return "", err
-	}
-	return tokenString, nil
-}
 
 func main() {
 	err := godotenv.Load()
@@ -68,58 +33,6 @@ func main() {
 		fmt.Println("连接数据库失败", err)
 		return
 	}
-
-	router := gin.Default()
-	router.POST("/register", func(c *gin.Context) {
-		var user User
-		if err := c.ShouldBind(&user); err != nil {
-			c.JSON(400, gin.H{"error": "invalid input"})
-			return
-		}
-
-		if err := db.Where("username = ?", user.Username).First(&user).Error; err == nil {
-			c.JSON(400, gin.H{"error": "username already exists"})
-			return
-		}
-		birthdayTime, err2 := time.Parse("2006-01-02", user.BirthDay.Format("2006-01-02"))
-		if err2 != nil {
-			return
-		}
-		newUser := User{Username: user.Username, Password: user.Password, BirthDay: birthdayTime}
-		if err := db.Create(&newUser).Error; err != nil {
-			c.JSON(500, gin.H{"error": "failed to create user"})
-			return
-		}
-		token, err := generateToken(user.Username)
-		if err != nil {
-			c.JSON(500, gin.H{"error": "failed to generate token"})
-			return
-		}
-		c.JSON(200, gin.H{"token": token})
-	})
-
-	router.POST("/login", func(c *gin.Context) {
-		var user User
-		if err := c.ShouldBind(&user); err != nil {
-			c.JSON(400, gin.H{"error": "invalid input"})
-			return
-		}
-		if user.Username == "" || user.Password == "" {
-			c.JSON(400, gin.H{"error": "username and password are required"})
-			return
-		}
-		if err := db.Where("username = ? AND password = ?", user.Username, user.Password).First(&user).Error; err != nil {
-			c.JSON(401, gin.H{"error": "invalid username or password"})
-			return
-		}
-		token, err := generateToken(user.Username)
-		if err != nil {
-			c.JSON(500, gin.H{"error": "failed to generate token"})
-			return
-		}
-		c.JSON(200, gin.H{"token": token})
-
-	})
 
 	router.GET("/birthday", func(c *gin.Context) {
 		tokenString := c.GetHeader("Authorization")
