@@ -1,74 +1,69 @@
 package service
 
 import (
+	"ati-study-jwt/middleware"
 	"ati-study-jwt/model"
 	"ati-study-jwt/repository"
-	"ati-study-jwt/utils"
 	"errors"
-	"gorm.io/gorm"
 	"time"
 )
 
 type UserService struct {
-	UserRepo repository.UserRepository
+	userRepo *repository.UserRepository
 }
 
 type LoginData struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
-func NewUserService(userRepo repository.UserRepository) *UserService {
-	return &UserService{UserRepo: userRepo}
+func NewUserService(userRepo *repository.UserRepository) *UserService {
+	return &UserService{userRepo: userRepo}
 }
 
-func (s *UserService) Register(username string, password string, birthday time.Time) (string, error) {
-	// 检查用户名是否已存在
-	_, err := s.UserRepo.GetUserByUsername(username)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return "", err // 数据库查询错误
-	}
-
-	if err == nil {
-		return "", errors.New("username already exists") // 用户名已存在
+func (s *UserService) Register(username, password string, birthday time.Time) (string, error) {
+	// 检查用户是否已存在
+	existingUser, _ := s.userRepo.GetUserByUsername(username)
+	if existingUser != nil {
+		return "", errors.New("user already exists")
 	}
 
 	// 创建新用户
 	user := &model.User{
 		Username: username,
-		Password: password, // 直接存储明文密码（不推荐，仅按要求实现）
+		Password: password, // 注意：实际项目中应该对密码进行哈希处理
 		BirthDay: birthday,
 	}
-	err = s.UserRepo.CreateUser(user)
-	if err != nil {
+
+	if err := s.userRepo.CreateUser(user); err != nil {
 		return "", err
 	}
 
-	// 生成 JWT Token
-	token, err := utils.GenerateToken(user.Username)
+	// 生成JWT token
+	token, err := middleware.GenerateToken(username)
 	if err != nil {
-		return "", errors.New("failed to generate token")
+		return "", err
 	}
 
 	return token, nil
 }
 
 func (s *UserService) Login(username, password string) (string, error) {
-	user, err := s.UserRepo.GetUserByUsername(username)
+	// 查找用户
+	user, err := s.userRepo.GetUserByUsername(username)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return "", errors.New("user not found")
-		}
-		return "", err
+		return "", errors.New("user not found")
 	}
 
+	// 验证密码（简单比较，实际项目中应该使用哈希验证）
 	if user.Password != password {
 		return "", errors.New("invalid password")
 	}
 
-	token, err := utils.GenerateToken(user.Username)
+	// 生成JWT token
+	token, err := middleware.GenerateToken(username)
 	if err != nil {
-		return "", errors.New("failed to generate token")
+		return "", err
 	}
 
 	return token, nil
