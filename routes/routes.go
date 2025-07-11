@@ -18,7 +18,7 @@ func SetupRoutes(router *gin.Engine, userService *service.UserService, db *gorm.
 			BirthDay time.Time `gorm:"column:birthday;type:date;not null" json:"birthday" form:"birthday"`
 		}
 		if err := c.ShouldBind(&user); err != nil {
-			c.JSON(400, gin.H{"error": "Invalid input"})
+			c.JSON(400, gin.H{"error": "Invalid input", "details": err.Error()})
 			return
 		}
 

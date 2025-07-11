@@ -1,8 +1,7 @@
 package config
 
 import (
-	"github.com/joho/godotenv"
-	"os"
+	"github.com/spf13/viper"
 	"strconv"
 )
 
@@ -16,18 +15,19 @@ type DatabaseConfig struct {
 
 func PostgresConfig() *DatabaseConfig {
 	// 加载.env文件
-	err := godotenv.Load()
-	if err != nil {
-		return nil
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath("./config")
+	if err := viper.ReadInConfig(); err != nil {
+		panic("Failed to read config file: " + err.Error())
 	}
-
-	port, _ := strconv.Atoi(os.Getenv("DB_PORT"))
+	port, _ := strconv.Atoi(viper.GetString("database.port"))
 
 	return &DatabaseConfig{
-		Host:     os.Getenv("DB_HOST"),
+		Host:     viper.GetString("database.host"),
 		Port:     port,
-		User:     os.Getenv("DB_USER"),
-		Password: os.Getenv("DB_PASSWORD"),
-		Database: os.Getenv("DB_NAME"),
+		User:     viper.GetString("database.user"),
+		Password: viper.GetString("database.password"),
+		Database: viper.GetString("database.name"),
 	}
 }

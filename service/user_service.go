@@ -4,6 +4,7 @@ import (
 	"ati-study-jwt/middleware"
 	"ati-study-jwt/model"
 	"ati-study-jwt/repository"
+	"context"
 	"errors"
 	"time"
 )
@@ -23,7 +24,7 @@ func NewUserService(userRepo *repository.UserRepository) *UserService {
 
 func (s *UserService) Register(username, password string, birthday time.Time) (string, error) {
 	// 检查用户是否已存在
-	existingUser, _ := s.userRepo.GetUserByUsername(username)
+	existingUser, _ := s.userRepo.GetUserByUsername(context.Background(), username)
 	if existingUser != nil {
 		return "", errors.New("user already exists")
 	}
@@ -35,7 +36,7 @@ func (s *UserService) Register(username, password string, birthday time.Time) (s
 		BirthDay: birthday,
 	}
 
-	if err := s.userRepo.CreateUser(user); err != nil {
+	if err := s.userRepo.CreateUser(context.Background(), user); err != nil {
 		return "", err
 	}
 
@@ -50,7 +51,7 @@ func (s *UserService) Register(username, password string, birthday time.Time) (s
 
 func (s *UserService) Login(username, password string) (string, error) {
 	// 查找用户
-	user, err := s.userRepo.GetUserByUsername(username)
+	user, err := s.userRepo.GetUserByUsername(context.Background(), username)
 	if err != nil {
 		return "", errors.New("user not found")
 	}
