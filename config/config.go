@@ -1,8 +1,10 @@
 package config
 
 import (
-	"github.com/spf13/viper"
+	"fmt"
 	"strconv"
+
+	"github.com/spf13/viper"
 )
 
 type DatabaseConfig struct {
@@ -15,12 +17,15 @@ type DatabaseConfig struct {
 
 func PostgresConfig() *DatabaseConfig {
 	// 加载.env文件
+	viper.SetConfigType("yaml")
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath("./config")
-	if err := viper.ReadInConfig(); err != nil {
-		panic("Failed to read config file: " + err.Error())
+	err := viper.ReadInConfig()
+	if err != nil {
+		panic(fmt.Errorf("fatal error config file: %s", err))
 	}
+
 	port, _ := strconv.Atoi(viper.GetString("database.port"))
 
 	return &DatabaseConfig{
