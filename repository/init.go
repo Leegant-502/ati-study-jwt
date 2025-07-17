@@ -10,7 +10,7 @@ import (
 func DBInit() (*gorm.DB, error) {
 	postgresConfig := config.PostgresConfig()
 	db, err := gorm.Open(postgres.Open(
-		fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable",
+		fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable&parseTime=True",
 			postgresConfig.User,
 			postgresConfig.Password,
 			postgresConfig.Host,
