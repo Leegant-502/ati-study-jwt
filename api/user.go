@@ -3,7 +3,6 @@ package api
 import (
 	"time"
 
-	"ati-study-jwt/model"
 	"ati-study-jwt/repository"
 	"ati-study-jwt/service"
 	"gorm.io/gorm"
@@ -58,17 +57,26 @@ func LoginHandler(userRepo *repository.UserRepository) gin.HandlerFunc {
 }
 
 func BirthdayHandler(userRepo *repository.UserRepository, db *gorm.DB) gin.HandlerFunc {
+	userService := service.NewUserService(userRepo)
 	return func(c *gin.Context) {
 		username, exists := c.Get("username")
 		if !exists {
 			c.JSON(500, gin.H{"error": "failed to get username from token"})
 			return
 		}
-		var user model.User
-		if err := db.Where("username = ?", username).First(&user).Error; err != nil {
-			c.JSON(404, gin.H{"error": "user not found"})
+
+		// 将interface{}类型转换为string
+		usernameStr, ok := username.(string)
+		if !ok {
+			c.JSON(500, gin.H{"error": "invalid username type"})
 			return
 		}
-		c.JSON(200, gin.H{"birthday": user.BirthDay.Format("2006-01-02")})
+
+		birthday, err := userService.GetBirthday(usernameStr)
+		if err != nil {
+			c.JSON(404, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(200, gin.H{"birthday": birthday})
 	}
 }

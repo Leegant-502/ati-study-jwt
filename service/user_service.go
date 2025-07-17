@@ -69,3 +69,16 @@ func (s *UserService) Login(username, password string) (string, error) {
 
 	return token, nil
 }
+
+func (s *UserService) GetBirthday(username string) (string, error) {
+	user, err := s.userRepo.GetUserByUsername(context.Background(), username)
+	if err != nil {
+		return "", errors.New("user not found")
+	}
+	return user.BirthDay.Format("2006-01-02"), nil
+}
+
+func (s *UserService) CheckUserExists(username string) bool {
+	user, err := s.userRepo.GetUserByUsername(context.Background(), username)
+	return err == nil && user != nil
+}
